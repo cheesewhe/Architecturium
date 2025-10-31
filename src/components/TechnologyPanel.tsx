@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Panel } from '../types';
-import { useState } from 'react';
+import { useState, memo } from 'react';
 
 interface TechnologyPanelProps {
   panel: Panel;
@@ -9,7 +9,7 @@ interface TechnologyPanelProps {
   onUpdatePosition: (panelId: string, x: number, y: number) => void;
 }
 
-export default function TechnologyPanel({ panel, position, onRemove, onUpdatePosition }: TechnologyPanelProps) {
+function TechnologyPanel({ panel, position, onRemove, onUpdatePosition }: TechnologyPanelProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   const getCategoryColor = (category: string) => {
@@ -87,17 +87,15 @@ export default function TechnologyPanel({ panel, position, onRemove, onUpdatePos
       whileHover={{ scale: 1.05, zIndex: 10 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      // Drag & Drop опционально отключен для минималистичности
-      // Можно включить обратно, раскомментировав строки ниже
-      // drag
-      // dragMomentum={false}
-      // dragElastic={0}
-      // dragConstraints={{ left: 0, top: 0, right: 10000, bottom: 10000 }}
-      // onDragEnd={handleDragEnd}
+      drag
+      dragMomentum={false}
+      dragElastic={0}
+      dragConstraints={{ left: 0, top: 0, right: 10000, bottom: 10000 }}
+      onDragEnd={handleDragEnd}
     >
       <button 
         className="remove-panel-btn" 
-        onClick={(e) => {
+        onClick={(e: React.MouseEvent) => {
           e.stopPropagation();
           onRemove(panel.id);
         }}
@@ -114,4 +112,6 @@ export default function TechnologyPanel({ panel, position, onRemove, onUpdatePos
     </motion.div>
   );
 }
+
+export default memo(TechnologyPanel);
 

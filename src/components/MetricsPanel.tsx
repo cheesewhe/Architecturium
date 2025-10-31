@@ -1,14 +1,79 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AppMetrics } from '../types';
+import { useEffect, useRef, useState, useMemo, memo } from 'react';
 
 interface MetricsPanelProps {
   metrics: AppMetrics;
 }
 
-export default function MetricsPanel({ metrics }: MetricsPanelProps) {
-  const uxScore = (metrics.ux.performance + metrics.ux.stability + metrics.ux.userFriendliness) / 3;
-  const devScore = (metrics.dev.developmentSpeed + metrics.dev.maintainability + (100 - metrics.dev.complexity) - metrics.dev.cost) / 4;
-  const totalScore = (uxScore + devScore) / 2;
+function MetricsPanel({ metrics }: MetricsPanelProps) {
+  const prevMetrics = useRef<AppMetrics | null>(null);
+  const [metricDeltas, setMetricDeltas] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (prevMetrics.current) {
+      const deltas: Record<string, number> = {};
+      
+      // UX deltas
+      deltas['ux-performance'] = metrics.ux.performance - prevMetrics.current.ux.performance;
+      deltas['ux-stability'] = metrics.ux.stability - prevMetrics.current.ux.stability;
+      deltas['ux-userFriendliness'] = metrics.ux.userFriendliness - prevMetrics.current.ux.userFriendliness;
+      
+      // Dev deltas
+      deltas['dev-developmentSpeed'] = metrics.dev.developmentSpeed - prevMetrics.current.dev.developmentSpeed;
+      deltas['dev-maintainability'] = metrics.dev.maintainability - prevMetrics.current.dev.maintainability;
+      deltas['dev-complexity'] = metrics.dev.complexity - prevMetrics.current.dev.complexity;
+      deltas['dev-cost'] = metrics.dev.cost - prevMetrics.current.dev.cost;
+      
+      // Filter out zero deltas and update state
+      const nonZeroDeltas: Record<string, number> = {};
+      Object.keys(deltas).forEach(key => {
+        if (Math.abs(deltas[key]) > 0.1) {
+          nonZeroDeltas[key] = deltas[key];
+        }
+      });
+      
+      setMetricDeltas(nonZeroDeltas);
+      
+      // Clear deltas after 2 seconds
+      setTimeout(() => setMetricDeltas({}), 2000);
+    }
+    prevMetrics.current = metrics;
+  }, [metrics]);
+
+  const uxScore = useMemo(() => 
+    (metrics.ux.performance + metrics.ux.stability + metrics.ux.userFriendliness) / 3,
+    [metrics.ux.performance, metrics.ux.stability, metrics.ux.userFriendliness]
+  );
+  
+  const devScore = useMemo(() => 
+    (metrics.dev.developmentSpeed + metrics.dev.maintainability + (100 - metrics.dev.complexity) - metrics.dev.cost) / 4,
+    [metrics.dev.developmentSpeed, metrics.dev.maintainability, metrics.dev.complexity, metrics.dev.cost]
+  );
+  
+  const totalScore = useMemo(() => (uxScore + devScore) / 2, [uxScore, devScore]);
+
+  const renderMetricValue = (value: number, deltaKey: string) => {
+    const delta = metricDeltas[deltaKey];
+    const hasDelta = delta !== undefined && Math.abs(delta) > 0.1;
+    
+    return (
+      <span className="metric-value">
+        {value.toFixed(1)}%
+        {hasDelta && (
+          <motion.span
+            className={`metric-delta ${delta > 0 ? 'positive' : 'negative'}`}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+          >
+            {delta > 0 ? '+' : ''}{delta.toFixed(1)}
+          </motion.span>
+        )}
+      </span>
+    );
+  };
 
   return (
     <div className="metrics-panel">
@@ -21,7 +86,7 @@ export default function MetricsPanel({ metrics }: MetricsPanelProps) {
           <div className="metric-item">
             <div className="metric-label">
               <span>Производительность</span>
-              <span className="metric-value">{metrics.ux.performance.toFixed(1)}%</span>
+              {renderMetricValue(metrics.ux.performance, 'ux-performance')}
             </div>
             <div className="metric-bar-bg">
               <motion.div
@@ -37,7 +102,7 @@ export default function MetricsPanel({ metrics }: MetricsPanelProps) {
           <div className="metric-item">
             <div className="metric-label">
               <span>Стабильность</span>
-              <span className="metric-value">{metrics.ux.stability.toFixed(1)}%</span>
+              {renderMetricValue(metrics.ux.stability, 'ux-stability')}
             </div>
             <div className="metric-bar-bg">
               <motion.div
@@ -53,7 +118,7 @@ export default function MetricsPanel({ metrics }: MetricsPanelProps) {
           <div className="metric-item">
             <div className="metric-label">
               <span>Удобство для пользователя</span>
-              <span className="metric-value">{metrics.ux.userFriendliness.toFixed(1)}%</span>
+              {renderMetricValue(metrics.ux.userFriendliness, 'ux-userFriendliness')}
             </div>
             <div className="metric-bar-bg">
               <motion.div
@@ -75,7 +140,7 @@ export default function MetricsPanel({ metrics }: MetricsPanelProps) {
           <div className="metric-item">
             <div className="metric-label">
               <span>Скорость разработки</span>
-              <span className="metric-value">{metrics.dev.developmentSpeed.toFixed(1)}%</span>
+              {renderMetricValue(metrics.dev.developmentSpeed, 'dev-developmentSpeed')}
             </div>
             <div className="metric-bar-bg">
               <motion.div
@@ -91,7 +156,7 @@ export default function MetricsPanel({ metrics }: MetricsPanelProps) {
           <div className="metric-item">
             <div className="metric-label">
               <span>Поддерживаемость</span>
-              <span className="metric-value">{metrics.dev.maintainability.toFixed(1)}%</span>
+              {renderMetricValue(metrics.dev.maintainability, 'dev-maintainability')}
             </div>
             <div className="metric-bar-bg">
               <motion.div
@@ -107,7 +172,20 @@ export default function MetricsPanel({ metrics }: MetricsPanelProps) {
           <div className="metric-item">
             <div className="metric-label">
               <span>Сложность</span>
-              <span className="metric-value warning">{metrics.dev.complexity.toFixed(1)}%</span>
+              <span className="metric-value warning">
+                {metrics.dev.complexity.toFixed(1)}%
+                {metricDeltas['dev-complexity'] && (
+                  <motion.span
+                    className={`metric-delta ${metricDeltas['dev-complexity'] > 0 ? 'negative' : 'positive'}`}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {metricDeltas['dev-complexity'] > 0 ? '+' : ''}{metricDeltas['dev-complexity'].toFixed(1)}
+                  </motion.span>
+                )}
+              </span>
             </div>
             <div className="metric-bar-bg">
               <motion.div
@@ -123,7 +201,20 @@ export default function MetricsPanel({ metrics }: MetricsPanelProps) {
           <div className="metric-item">
             <div className="metric-label">
               <span>Стоимость</span>
-              <span className="metric-value warning">{metrics.dev.cost.toFixed(1)}%</span>
+              <span className="metric-value warning">
+                {metrics.dev.cost.toFixed(1)}%
+                {metricDeltas['dev-cost'] && (
+                  <motion.span
+                    className={`metric-delta ${metricDeltas['dev-cost'] > 0 ? 'negative' : 'positive'}`}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {metricDeltas['dev-cost'] > 0 ? '+' : ''}{metricDeltas['dev-cost'].toFixed(1)}
+                  </motion.span>
+                )}
+              </span>
             </div>
             <div className="metric-bar-bg">
               <motion.div
@@ -157,4 +248,6 @@ export default function MetricsPanel({ metrics }: MetricsPanelProps) {
     </div>
   );
 }
+
+export default memo(MetricsPanel);
 

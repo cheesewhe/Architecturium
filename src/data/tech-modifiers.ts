@@ -172,10 +172,6 @@ export const technologyModifiers: Record<string, TechnologyModifier[]> = {
 
   react: [
     {
-      targetTechId: 'node',
-      dev: { developmentSpeed: 8 }
-    },
-    {
       targetTechId: 'rest',
       ux: { performance: 5 },
       dev: { developmentSpeed: 8 }
@@ -185,25 +181,12 @@ export const technologyModifiers: Record<string, TechnologyModifier[]> = {
       ux: { performance: 8, userFriendliness: 5 },
       dev: { developmentSpeed: 10 }
     },
-    {
-      targetTechId: 'webpack',
-      ux: { performance: 5 },
-      dev: { complexity: 5 }
-    },
   ],
 
   vue: [
     {
-      targetTechId: 'node',
-      dev: { developmentSpeed: 10 }
-    },
-    {
       targetTechId: 'rest',
       dev: { developmentSpeed: 10, complexity: -3 }
-    },
-    {
-      targetTechId: 'express',
-      dev: { developmentSpeed: 8 }
     },
   ],
 
@@ -214,11 +197,6 @@ export const technologyModifiers: Record<string, TechnologyModifier[]> = {
       dev: { maintainability: 10, complexity: 5 }
     },
     {
-      targetTechId: 'nestjs',
-      ux: { stability: 12, performance: 8 },
-      dev: { maintainability: 15, complexity: 8 }
-    },
-    {
       targetTechId: 'graphql',
       ux: { stability: 8 },
       dev: { maintainability: 8 }
@@ -226,11 +204,6 @@ export const technologyModifiers: Record<string, TechnologyModifier[]> = {
   ],
 
   svelte: [
-    {
-      targetTechId: 'node',
-      ux: { performance: 8 },
-      dev: { developmentSpeed: 8 }
-    },
     {
       targetTechId: 'rest',
       ux: { performance: 5 },
@@ -392,11 +365,6 @@ export const technologyModifiers: Record<string, TechnologyModifier[]> = {
 
   postgresql: [
     {
-      targetTechId: 'redis',
-      ux: { performance: 15, userFriendliness: 8 },
-      dev: { complexity: 5 }
-    },
-    {
       targetTechId: 'docker',
       ux: { stability: 8 },
       dev: { maintainability: 10 }
@@ -410,11 +378,6 @@ export const technologyModifiers: Record<string, TechnologyModifier[]> = {
 
   mongodb: [
     {
-      targetTechId: 'redis',
-      ux: { performance: 12 },
-      dev: { complexity: 3 }
-    },
-    {
       targetTechId: 'docker',
       ux: { stability: 5 },
       dev: { maintainability: 8 }
@@ -427,11 +390,6 @@ export const technologyModifiers: Record<string, TechnologyModifier[]> = {
   ],
 
   mysql: [
-    {
-      targetTechId: 'redis',
-      ux: { performance: 12 },
-      dev: { complexity: 3 }
-    },
     {
       targetTechId: 'docker',
       ux: { stability: 5 },
@@ -460,27 +418,12 @@ export const technologyModifiers: Record<string, TechnologyModifier[]> = {
 
   rest: [
     {
-      targetTechId: 'jwt',
-      ux: { stability: 5 },
-      dev: { developmentSpeed: 8, complexity: 3 }
-    },
-    {
-      targetTechId: 'oauth',
-      ux: { stability: 8, userFriendliness: -3 },
-      dev: { complexity: 8 }
-    },
-    {
       targetTechId: 'nginx',
       ux: { performance: 10, stability: 8 }
     },
   ],
 
   graphql: [
-    {
-      targetTechId: 'jwt',
-      ux: { stability: 5 },
-      dev: { developmentSpeed: 5, complexity: 5 }
-    },
     {
       targetTechId: 'nginx',
       ux: { performance: 8, stability: 5 }
@@ -517,41 +460,6 @@ export const technologyModifiers: Record<string, TechnologyModifier[]> = {
 
   // ============ СЕРВИСЫ И ИНФРАСТРУКТУРА ============
 
-  docker: [
-    {
-      targetTechId: 'kubernetes',
-      ux: { stability: 15, performance: 10 },
-      dev: { maintainability: 15, complexity: 15, cost: 12 }
-    },
-    {
-      targetTechId: 'nginx',
-      ux: { stability: 10, performance: 8 },
-      dev: { maintainability: 10 }
-    },
-  ],
-
-  nginx: [
-    {
-      targetTechId: 'docker',
-      ux: { stability: 8, performance: 5 },
-      dev: { maintainability: 8 }
-    },
-    {
-      targetTechId: 'kubernetes',
-      ux: { stability: 10, performance: 10 },
-      dev: { maintainability: 10, complexity: 8 }
-    },
-  ],
-
-  webpack: [
-    {
-      targetTechId: 'ts',
-      dev: { developmentSpeed: 5, complexity: 8 }
-    },
-    {
-      targetTechId: 'docker',
-      dev: { complexity: 5 }
-    },
-  ],
 };
+
 

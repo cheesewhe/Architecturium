@@ -23,11 +23,15 @@ export interface TechnologyModifier {
 
 // Видимые параметры технологии (для игрока)
 export interface VisibleTechParams {
+  // UX параметры
   performance: number;
   stability: number;
-  usability: number;
-  price: number;
+  userFriendliness: number;
+  // Dev параметры
+  developmentSpeed: number;
+  maintainability: number;
   complexity: number; // Базовая сложность изучения
+  cost: number;
 }
 
 // Типы для технологий
@@ -40,12 +44,16 @@ export interface Technology {
   pros: string[];
   cons: string[];
   
-  // ВИДИМЫЕ параметры (показываются игроку)
-  performance: number; // 0-100
-  stability: number; // 0-100
-  usability: number; // 0-100
-  price: number; // 0-100 (чем меньше, тем дешевле)
-  complexity: number; // 0-100 Сложность изучения (для сортировки)
+  // ВИДИМЫЕ параметры UX (показываются игроку)
+  performance: number; // 0-100 Производительность
+  stability: number; // 0-100 Стабильность
+  userFriendliness: number; // 0-100 Удобство для пользователя
+  
+  // ВИДИМЫЕ параметры Dev (показываются игроку)
+  developmentSpeed: number; // 0-100 Скорость разработки
+  maintainability: number; // 0-100 Поддерживаемость
+  complexity: number; // 0-100 Сложность изучения (чем выше, тем сложнее)
+  cost: number; // 0-100 Стоимость разработки (чем выше, тем дороже)
   
   // СКРЫТЫЕ параметры (только для расчётов)
   compatibility?: TechnologyCompatibility;

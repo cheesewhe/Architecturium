@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Technology, AppSchema } from '../types';
 import { technologies } from '../data/technologies';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import { sortTechnologies, getRecommendationLabel } from '../utils/tech-sorting';
 import { getModifiersForTech, groupModifiers } from '../utils/modifier-display';
 
@@ -12,7 +12,7 @@ interface TechnologyPickerProps {
   appSchema: AppSchema;
 }
 
-export default function TechnologyPicker({ position, onSelect, onClose, appSchema }: TechnologyPickerProps) {
+function TechnologyPicker({ position, onSelect, onClose, appSchema }: TechnologyPickerProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const categories = Array.from(new Set(technologies.map(t => t.category)));
 
@@ -198,36 +198,50 @@ export default function TechnologyPicker({ position, onSelect, onClose, appSchem
                   </ul>
                 </div>
 
+                <div className="tech-detail-section">
+                  <h4>📊 Параметры разработки</h4>
+                </div>
+
                 <div className="tech-detail-metrics">
                   <div className="detail-metric">
-                    <span>Производительность</span>
+                    <span>⚡ Скорость разработки</span>
                     <div className="detail-metric-bar">
                       <div 
                         className="detail-metric-fill" 
-                        style={{ width: `${selectedTech.performance}%`, background: '#4a9eff' }}
+                        style={{ width: `${selectedTech.developmentSpeed}%`, background: '#10b981' }}
                       />
                     </div>
-                    <span className="detail-metric-value">{selectedTech.performance}%</span>
+                    <span className="detail-metric-value">{selectedTech.developmentSpeed}%</span>
                   </div>
                   <div className="detail-metric">
-                    <span>Стабильность</span>
+                    <span>🔧 Поддерживаемость</span>
                     <div className="detail-metric-bar">
                       <div 
                         className="detail-metric-fill" 
-                        style={{ width: `${selectedTech.stability}%`, background: '#10b981' }}
+                        style={{ width: `${selectedTech.maintainability}%`, background: '#4a9eff' }}
                       />
                     </div>
-                    <span className="detail-metric-value">{selectedTech.stability}%</span>
+                    <span className="detail-metric-value">{selectedTech.maintainability}%</span>
                   </div>
                   <div className="detail-metric">
-                    <span>Удобство</span>
+                    <span>🧠 Сложность изучения</span>
                     <div className="detail-metric-bar">
                       <div 
                         className="detail-metric-fill" 
-                        style={{ width: `${selectedTech.usability}%`, background: '#f59e0b' }}
+                        style={{ width: `${selectedTech.complexity}%`, background: '#f59e0b' }}
                       />
                     </div>
-                    <span className="detail-metric-value">{selectedTech.usability}%</span>
+                    <span className="detail-metric-value">{selectedTech.complexity}%</span>
+                  </div>
+                  <div className="detail-metric">
+                    <span>💰 Стоимость разработки</span>
+                    <div className="detail-metric-bar">
+                      <div 
+                        className="detail-metric-fill" 
+                        style={{ width: `${selectedTech.cost}%`, background: '#ef4444' }}
+                      />
+                    </div>
+                    <span className="detail-metric-value">{selectedTech.cost}%</span>
                   </div>
                 </div>
 
@@ -359,4 +373,6 @@ export default function TechnologyPicker({ position, onSelect, onClose, appSchem
     </AnimatePresence>
   );
 }
+
+export default memo(TechnologyPicker);
 

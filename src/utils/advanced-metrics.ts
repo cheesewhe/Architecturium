@@ -61,8 +61,8 @@ function calculateBaseMetrics(technologies: Technology[]): AppMetrics {
   // Средние значения базовых параметров
   const avgPerformance = technologies.reduce((sum, t) => sum + t.performance, 0) / count;
   const avgStability = technologies.reduce((sum, t) => sum + t.stability, 0) / count;
-  const avgUsability = technologies.reduce((sum, t) => sum + t.usability, 0) / count;
-  const avgCost = technologies.reduce((sum, t) => sum + t.price, 0) / count;
+  const avgUsability = technologies.reduce((sum, t) => sum + t.userFriendliness, 0) / count;
+  const avgCost = technologies.reduce((sum, t) => sum + t.cost, 0) / count;
 
   // Сложность растёт с количеством технологий
   const complexityFromCount = Math.min(100, 30 + (count * 8));
