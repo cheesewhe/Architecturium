@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Technology, AppSchema } from '../types';
 import { technologies } from '../data/technologies';
-import { useState, useEffect, useMemo, memo } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { sortTechnologies, getRecommendationLabel } from '../utils/tech-sorting';
 import { getModifiersForTech, groupModifiers } from '../utils/modifier-display';
 
@@ -12,7 +12,7 @@ interface TechnologyPickerProps {
   appSchema: AppSchema;
 }
 
-function TechnologyPicker({ position, onSelect, onClose, appSchema }: TechnologyPickerProps) {
+function TechnologyPicker({ position: _position, onSelect, onClose, appSchema }: TechnologyPickerProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const categories = Array.from(new Set(technologies.map(t => t.category)));
 

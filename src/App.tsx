@@ -1,13 +1,40 @@
-import { useState } from 'react';
+import { useState, useCallback, lazy, Suspense } from 'react';
 import * as React from 'react';
 import { motion } from 'framer-motion';
-import { AppSchema, AppMetrics, Technology } from './types';
+import { AppSchema, AppMetrics, Technology, Budget, ProjectTimeline, Team } from './types';
 import FrontendView from './components/FrontendView';
 import BackendView from './components/BackendView';
 import MetricsPanel from './components/MetricsPanel';
-import TechnologyPicker from './components/TechnologyPicker';
+import BudgetPanel from './components/BudgetPanel';
+import TimelinePanel from './components/TimelinePanel';
+import TeamPanel from './components/TeamPanel';
+import HireDeveloperModal from './components/HireDeveloperModal';
+import EventModal from './components/EventModal';
+import EventNotification from './components/EventNotification';
+import ChallengePanel from './components/ChallengePanel';
+import CampaignSelector from './components/CampaignSelector';
+import ChallengeCompletionModal from './components/ChallengeCompletionModal';
+import AppTypeSelector from './components/AppTypeSelector';
+import SecurityPanel from './components/SecurityPanel';
+import LoadTestPanel from './components/LoadTestPanel';
+import AchievementsPanel from './components/AchievementsPanel';
+import AchievementNotification from './components/AchievementNotification';
+import TutorialOverlay from './components/TutorialOverlay';
+import TipsPanel from './components/TipsPanel';
+import ParticleEffect from './components/ParticleEffect';
+const TechnologyPicker = lazy(() => import('./components/TechnologyPicker'));
 import { calculateAdvancedMetrics } from './utils/advanced-metrics';
 import { calculateAutoPosition } from './utils/auto-layout';
+import { createBudget, calculateTotalCost, updateBudget, canAffordTech } from './utils/budget';
+import { checkAchievements } from './utils/achievements';
+import { getNextStep } from './utils/tutorial';
+import { createTimeline, updateTimeline } from './utils/timeline';
+import { createTeam, addDeveloper, removeDeveloper, calculateTeamSpeedMultiplier } from './utils/team';
+import { generateRandomEvent, applyEventEffects } from './utils/events';
+import { updateChallengeObjectives, isChallengeComplete, checkChallengeConstraints } from './utils/challenges';
+import { analyzeSecurity } from './utils/security';
+import { checkAppTypeRequirements } from './utils/app-type-metrics';
+import { Achievement, TutorialStep, GameEvent, Challenge, AppType } from './types';
 import './App.css';
 import './components/styles.css';
 import './components/picker-detail-styles.css';
@@ -18,7 +45,7 @@ function App() {
     backend: [],
   });
   const [activeView, setActiveView] = useState<'frontend' | 'backend'>('frontend');
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [, setIsTransitioning] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [pickerPosition, setPickerPosition] = useState({ x: 0, y: 0, clickX: 0, clickY: 0 });
   
@@ -26,10 +53,234 @@ function App() {
   const [history, setHistory] = useState<AppSchema[]>([{ frontend: [], backend: [] }]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
-  const metrics = React.useMemo(() => calculateAdvancedMetrics(appSchema), [appSchema]);
+  // Budget system
+  const [budget, setBudget] = useState<Budget>(() => createBudget());
+
+  // Timeline system
+  const [timeline, setTimeline] = useState<ProjectTimeline>(() => {
+    const saved = localStorage.getItem('timeline');
+    return saved ? JSON.parse(saved) : createTimeline();
+  });
+  const [isTimelineRunning, setIsTimelineRunning] = useState(false);
+  
+  // Save timeline to localStorage
+  React.useEffect(() => {
+    localStorage.setItem('timeline', JSON.stringify(timeline));
+  }, [timeline]);
+
+  // Team system
+  const [team, setTeam] = useState<Team>(() => {
+    const saved = localStorage.getItem('team');
+    return saved ? JSON.parse(saved) : createTeam();
+  });
+  const [showHireModal, setShowHireModal] = useState(false);
+  
+  // Save team to localStorage
+  React.useEffect(() => {
+    localStorage.setItem('team', JSON.stringify(team));
+  }, [team]);
+
+  // Events system
+  const [currentEvent, setCurrentEvent] = useState<GameEvent | null>(null);
+  const [eventNotification, setEventNotification] = useState<GameEvent | null>(null);
+
+  // Challenges system
+  const [activeChallenge, setActiveChallenge] = useState<Challenge | null>(() => {
+    const saved = localStorage.getItem('activeChallenge');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [showCampaignSelector, setShowCampaignSelector] = useState(false);
+  const [completedChallenge, setCompletedChallenge] = useState<Challenge | null>(null);
+
+  // App Type system
+  const [selectedAppType, setSelectedAppType] = useState<AppType | null>(() => {
+    const saved = localStorage.getItem('selectedAppType');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [showAppTypeSelector, setShowAppTypeSelector] = useState(false);
+
+  // Security system
+  const security = React.useMemo(() => analyzeSecurity(appSchema), [appSchema]);
+  
+  // Save active challenge to localStorage
+  React.useEffect(() => {
+    if (activeChallenge) {
+      localStorage.setItem('activeChallenge', JSON.stringify(activeChallenge));
+    } else {
+      localStorage.removeItem('activeChallenge');
+    }
+  }, [activeChallenge]);
+
+  // Save selected app type to localStorage
+  React.useEffect(() => {
+    if (selectedAppType) {
+      localStorage.setItem('selectedAppType', JSON.stringify(selectedAppType));
+    } else {
+      localStorage.removeItem('selectedAppType');
+    }
+  }, [selectedAppType]);
+
+  // Calculate metrics
+  const baseMetrics = React.useMemo(() => calculateAdvancedMetrics(appSchema), [appSchema]);
+  const [metrics, setMetrics] = React.useState<AppMetrics>(baseMetrics);
+  
+  // Update metrics when schema changes
+  React.useEffect(() => {
+    setMetrics(baseMetrics);
+  }, [baseMetrics, setMetrics]);
+
+  // Check app type requirements
+  React.useEffect(() => {
+    if (selectedAppType) {
+      const requirements = checkAppTypeRequirements(metrics, selectedAppType);
+      if (!requirements.met && requirements.issues.length > 0) {
+        // Можно показать предупреждение
+      }
+    }
+  }, [selectedAppType, metrics]);
+
+  // Achievements system
+  const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>(() => {
+    const saved = localStorage.getItem('unlockedAchievements');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [newAchievement, setNewAchievement] = useState<Achievement | null>(null);
+
+  // Tutorial system
+  const [tutorialStep, setTutorialStep] = useState<TutorialStep | null>(() => {
+    const completed = localStorage.getItem('tutorialCompleted');
+    if (completed === 'true') return null;
+    const saved = localStorage.getItem('tutorialStep');
+    return saved ? JSON.parse(saved) : getNextStep(null);
+  });
+  const [showTutorial, setShowTutorial] = useState(() => {
+    const completed = localStorage.getItem('tutorialCompleted');
+    return completed !== 'true';
+  });
+  const [particleEffect, setParticleEffect] = useState<{ x: number; y: number } | null>(null);
+
+  // Calculate current cost
+  const currentCost = React.useMemo(() => {
+    const allPanels = [...appSchema.frontend, ...appSchema.backend];
+    const technologies = allPanels.map(p => p.technology);
+    return calculateTotalCost(technologies);
+  }, [appSchema]);
+
+  // Update budget when cost changes
+  React.useEffect(() => {
+    setBudget(prev => ({
+      ...prev,
+      spent: currentCost,
+      remaining: prev.total - currentCost,
+    }));
+  }, [currentCost]);
+
+  // Check achievements when schema or metrics change
+  React.useEffect(() => {
+    const newlyUnlocked = checkAchievements(appSchema, metrics, budget, unlockedAchievements);
+    
+    if (newlyUnlocked.length > 0) {
+      const newIds = newlyUnlocked.map(a => a.id);
+      setUnlockedAchievements(prev => {
+        const updated = [...prev, ...newIds];
+        localStorage.setItem('unlockedAchievements', JSON.stringify(updated));
+        return updated;
+      });
+      
+      // Show notification for first achievement
+      setNewAchievement(newlyUnlocked[0]);
+      setTimeout(() => setNewAchievement(null), 5000);
+    }
+  }, [appSchema, metrics, budget, unlockedAchievements]);
+
+  // Update challenge objectives
+  React.useEffect(() => {
+    if (activeChallenge) {
+      const updated = updateChallengeObjectives(activeChallenge, appSchema, metrics, budget, timeline);
+      setActiveChallenge(updated);
+
+      // Check constraints
+      const constraints = checkChallengeConstraints(updated, appSchema, budget, timeline);
+      if (constraints.violated && constraints.message) {
+        // Можно показать предупреждение
+      }
+
+      // Check if completed
+      if (isChallengeComplete(updated) && !updated.objectives.every((obj, idx) => 
+        activeChallenge?.objectives[idx]?.completed === obj.completed
+      )) {
+        setCompletedChallenge(updated);
+      }
+    }
+  }, [appSchema, metrics, budget, timeline, activeChallenge]);
+
+  // Update timeline when metrics change
+  React.useEffect(() => {
+    if (isTimelineRunning) {
+      const speedMultiplier = calculateTeamSpeedMultiplier(team, appSchema);
+      const interval = setInterval(() => {
+        setTimeline(prev => {
+          const updated = updateTimeline(prev, metrics, 0.1 * speedMultiplier);
+          
+          // Генерируем случайные события
+          if (Math.random() < 0.02) { // 2% вероятность каждую секунду
+            const event = generateRandomEvent(updated.daysElapsed);
+            if (event) {
+              setEventNotification(event);
+              setTimeout(() => {
+                setEventNotification(null);
+                setCurrentEvent(event);
+              }, 2000);
+            }
+          }
+          
+          return updated;
+        });
+      }, 1000); // Обновляем каждую секунду
+
+      return () => clearInterval(interval);
+    }
+  }, [isTimelineRunning, metrics, team, appSchema]);
+
+  // Update budget with team salary
+  React.useEffect(() => {
+    setBudget(prev => ({
+      ...prev,
+      spent: currentCost + team.totalSalary,
+      remaining: prev.total - currentCost - team.totalSalary,
+    }));
+  }, [team.totalSalary, currentCost]);
+
+  // Tutorial navigation
+  const handleTutorialNext = useCallback(() => {
+    if (!tutorialStep) return;
+    const next = getNextStep(tutorialStep.id);
+    setTutorialStep(next);
+    if (next) {
+      localStorage.setItem('tutorialStep', JSON.stringify(next));
+    }
+  }, [tutorialStep]);
+
+  const handleTutorialPrevious = useCallback(() => {
+    if (!tutorialStep) return;
+    // Implementation for previous step
+  }, [tutorialStep]);
+
+  const handleTutorialSkip = useCallback(() => {
+    setShowTutorial(false);
+    setTutorialStep(null);
+    localStorage.setItem('tutorialCompleted', 'true');
+  }, []);
+
+  const handleTutorialComplete = useCallback(() => {
+    setShowTutorial(false);
+    setTutorialStep(null);
+    localStorage.setItem('tutorialCompleted', 'true');
+  }, []);
 
   // Save to history when schema changes
-  const saveToHistory = (newSchema: AppSchema) => {
+  const saveToHistory = useCallback((newSchema: AppSchema) => {
     setHistory(prev => {
       const newHistory = prev.slice(0, historyIndex + 1);
       newHistory.push(newSchema);
@@ -41,25 +292,25 @@ function App() {
       return newHistory;
     });
     setHistoryIndex(prev => Math.min(prev + 1, 49));
-  };
+  }, [historyIndex]);
 
   // Undo function
-  const undo = () => {
+  const undo = useCallback(() => {
     if (historyIndex > 0) {
       const prevSchema = history[historyIndex - 1];
       setAppSchema(prevSchema);
       setHistoryIndex(prev => prev - 1);
     }
-  };
+  }, [historyIndex, history]);
 
   // Redo function
-  const redo = () => {
+  const redo = useCallback(() => {
     if (historyIndex < history.length - 1) {
       const nextSchema = history[historyIndex + 1];
       setAppSchema(nextSchema);
       setHistoryIndex(prev => prev + 1);
     }
-  };
+  }, [historyIndex, history]);
 
   // Export schema to JSON
   const exportSchema = () => {
@@ -102,7 +353,15 @@ function App() {
     input.click();
   };
 
-  const handleAddPanel = (tech: Technology, x: number, y: number) => {
+  const handleAddPanel = useCallback((tech: Technology, _x: number, _y: number) => {
+    // Проверяем бюджет
+    if (!canAffordTech(budget, tech)) {
+      const cost = calculateTotalCost([tech]);
+      alert(`Недостаточно средств! Стоимость ${tech.name}: $${cost.toLocaleString()}. Осталось: $${budget.remaining.toLocaleString()}`);
+      setShowPicker(false);
+      return;
+    }
+
     // Проверяем, есть ли уже технология этой категории (кроме сервисов - их можно несколько)
     if (tech.category !== 'service') {
       const existingTechOfCategory = appSchema[activeView].find(
@@ -145,19 +404,30 @@ function App() {
     setAppSchema(newSchema);
     saveToHistory(newSchema);
     
+    // Update budget
+    const techCost = calculateTotalCost([tech]);
+    const updatedBudget = updateBudget(budget, techCost);
+    if (updatedBudget) {
+      setBudget(updatedBudget);
+    }
+    
+    // Particle effect
+    setParticleEffect({ x: autoPosition.x + 150, y: autoPosition.y + 60 });
+    setTimeout(() => setParticleEffect(null), 1000);
+    
     setShowPicker(false);
-  };
+  }, [appSchema, activeView, saveToHistory, budget]);
 
-  const handleRemovePanel = (panelId: string) => {
+  const handleRemovePanel = useCallback((panelId: string) => {
     const updated = {
       ...appSchema,
       [activeView]: appSchema[activeView].filter(p => p.id !== panelId),
     };
     setAppSchema(updated);
     saveToHistory(updated);
-  };
+  }, [appSchema, activeView, saveToHistory]);
 
-  const handleUpdatePanelPosition = (panelId: string, x: number, y: number) => {
+  const handleUpdatePanelPosition = useCallback((panelId: string, x: number, y: number) => {
     const updated = {
       ...appSchema,
       [activeView]: appSchema[activeView].map(p => 
@@ -166,9 +436,9 @@ function App() {
     };
     setAppSchema(updated);
     // Don't save position changes to history to avoid clutter
-  };
+  }, [appSchema, activeView]);
 
-  const handleClearAll = () => {
+  const handleClearAll = useCallback(() => {
     if (window.confirm(`Удалить все панели на экране ${activeView === 'frontend' ? 'Frontend' : 'Backend'}?`)) {
       const updated = {
         ...appSchema,
@@ -177,9 +447,9 @@ function App() {
       setAppSchema(updated);
       saveToHistory(updated);
     }
-  };
+  }, [appSchema, activeView, saveToHistory]);
 
-  const openPicker = (e: React.MouseEvent) => {
+  const openPicker = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     // Получаем координаты клика относительно view-wrapper
     const viewWrapper = (e.currentTarget as HTMLElement).closest('.view-wrapper');
@@ -200,7 +470,7 @@ function App() {
       clickY,
     });
     setShowPicker(true);
-  };
+  }, []);
 
   // Keyboard shortcuts
   React.useEffect(() => {
@@ -232,7 +502,7 @@ function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showPicker, historyIndex, history]);
+  }, [showPicker, undo, redo]);
 
   // Сохранение в localStorage
   React.useEffect(() => {
@@ -343,6 +613,34 @@ function App() {
           >
             📤 Импорт
           </button>
+          <button 
+            className="toolbar-btn" 
+            onClick={() => setShowAchievements(true)}
+            title="Достижения"
+          >
+            🏆 Достижения ({unlockedAchievements.length})
+          </button>
+          <button 
+            className={`toolbar-btn ${isTimelineRunning ? 'active' : ''}`}
+            onClick={() => setIsTimelineRunning(!isTimelineRunning)}
+            title={isTimelineRunning ? 'Остановить прогресс' : 'Запустить прогресс'}
+          >
+            {isTimelineRunning ? '⏸️ Пауза' : '▶️ Запуск'}
+          </button>
+          <button 
+            className="toolbar-btn"
+            onClick={() => setShowCampaignSelector(true)}
+            title="Режим кампании"
+          >
+            🎯 Кампания
+          </button>
+          <button 
+            className="toolbar-btn"
+            onClick={() => setShowAppTypeSelector(true)}
+            title="Тип приложения"
+          >
+            {selectedAppType ? selectedAppType.icon : '📱'} {selectedAppType ? selectedAppType.name : 'Тип приложения'}
+          </button>
           {appSchema[activeView].length > 0 && (
             <button 
               className="toolbar-btn clear-btn" 
@@ -374,17 +672,145 @@ function App() {
           )}
         </div>
 
+        <BudgetPanel budget={budget} />
+        <TimelinePanel timeline={timeline} />
+        <TeamPanel
+          team={team}
+          onHire={() => setShowHireModal(true)}
+          onFire={(id) => {
+            setTeam(prev => removeDeveloper(prev, id));
+          }}
+        />
+        {activeChallenge && (
+          <ChallengePanel challenge={activeChallenge} />
+        )}
+        {selectedAppType && (
+          <div className="app-type-badge">
+            <span className="badge-icon">{selectedAppType.icon}</span>
+            <span className="badge-text">{selectedAppType.name}</span>
+          </div>
+        )}
+        <SecurityPanel security={security} />
+        <LoadTestPanel schema={appSchema} metrics={metrics} />
         <MetricsPanel metrics={metrics} />
 
         {showPicker && (
-          <TechnologyPicker
-            position={pickerPosition}
-            onSelect={tech => {
-              // АВТОПОЗИЦИОНИРОВАНИЕ: координаты клика игнорируются, панель автоматически разместится
-              handleAddPanel(tech, 0, 0);
+          <Suspense fallback={<div>Загрузка...</div>}>
+            <TechnologyPicker
+              position={pickerPosition}
+              onSelect={tech => {
+                // АВТОПОЗИЦИОНИРОВАНИЕ: координаты клика игнорируются, панель автоматически разместится
+                handleAddPanel(tech, 0, 0);
+              }}
+              onClose={() => setShowPicker(false)}
+              appSchema={appSchema}
+            />
+          </Suspense>
+        )}
+
+        {showAchievements && (
+          <div className="modal-overlay" onClick={() => setShowAchievements(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <AchievementsPanel
+                unlockedIds={unlockedAchievements}
+                onClose={() => setShowAchievements(false)}
+              />
+            </div>
+          </div>
+        )}
+
+        {newAchievement && (
+          <AchievementNotification
+            achievement={newAchievement}
+            onClose={() => setNewAchievement(null)}
+          />
+        )}
+
+        {showTutorial && tutorialStep && (
+          <TutorialOverlay
+            step={tutorialStep}
+            onNext={handleTutorialNext}
+            onPrevious={handleTutorialPrevious}
+            onSkip={handleTutorialSkip}
+            onComplete={handleTutorialComplete}
+          />
+        )}
+
+        <TipsPanel />
+
+        {particleEffect && (
+          <ParticleEffect x={particleEffect.x} y={particleEffect.y} />
+        )}
+
+        {showHireModal && (
+          <HireDeveloperModal
+            budget={budget}
+            currentTeam={team.developers}
+            onHire={(dev) => {
+              setTeam(prev => addDeveloper(prev, dev));
             }}
-            onClose={() => setShowPicker(false)}
-            appSchema={appSchema}
+            onClose={() => setShowHireModal(false)}
+          />
+        )}
+
+        {eventNotification && (
+          <EventNotification
+            event={eventNotification}
+            onShow={() => {
+              setEventNotification(null);
+              setCurrentEvent(eventNotification);
+            }}
+          />
+        )}
+
+        {currentEvent && (
+          <EventModal
+            event={currentEvent}
+            onChoice={(choice) => {
+              const result = applyEventEffects(metrics, budget, timeline, choice.effects);
+              setMetrics(result.metrics);
+              setBudget(result.budget);
+              setTimeline(result.timeline);
+              setCurrentEvent(null);
+            }}
+            onClose={() => {
+              if (!currentEvent.choices) {
+                const result = applyEventEffects(metrics, budget, timeline, currentEvent.effects);
+                setMetrics(result.metrics);
+                setBudget(result.budget);
+                setTimeline(result.timeline);
+              }
+              setCurrentEvent(null);
+            }}
+          />
+        )}
+
+        {showCampaignSelector && (
+          <CampaignSelector
+            selectedChallenge={activeChallenge}
+            onSelect={(challenge) => {
+              setActiveChallenge(challenge);
+              setShowCampaignSelector(false);
+            }}
+            onClose={() => setShowCampaignSelector(false)}
+          />
+        )}
+
+        {completedChallenge && (
+          <ChallengeCompletionModal
+            challenge={completedChallenge}
+            onClose={() => setCompletedChallenge(null)}
+          />
+        )}
+
+        {showAppTypeSelector && (
+          <AppTypeSelector
+            selectedType={selectedAppType}
+            onSelect={(appType) => {
+              setSelectedAppType(appType);
+              setShowAppTypeSelector(false);
+            }}
+            onClose={() => setShowAppTypeSelector(false)}
           />
         )}
       </div>

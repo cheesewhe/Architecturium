@@ -91,7 +91,7 @@ function hasAnyModifier(modifier: TechnologyModifier): boolean {
   );
 }
 
-function mergeModifiers(target: any, source: any) {
+function mergeModifiers(target: { ux: Record<string, number>; dev: Record<string, number> }, source: { ux: Record<string, number>; dev: Record<string, number> }) {
   // UX
   if (source.ux.performance) target.ux.performance = (target.ux.performance || 0) + source.ux.performance;
   if (source.ux.stability) target.ux.stability = (target.ux.stability || 0) + source.ux.stability;

@@ -1,4 +1,4 @@
-import { Panel, Technology } from '../types';
+import { Panel } from '../types';
 
 /**
  * УТИЛИТА ДЛЯ АВТОМАТИЧЕСКОГО ПОЗИЦИОНИРОВАНИЯ ПАНЕЛЕЙ
@@ -7,7 +7,7 @@ import { Panel, Technology } from '../types';
  * Каждая новая панель добавляется под предыдущую
  */
 
-const PANEL_WIDTH = 300;
+// const PANEL_WIDTH = 300; // Reserved for future use
 const PANEL_HEIGHT = 120;
 const PANEL_SPACING = 20; // Отступ между панелями
 const LEFT_MARGIN = 40; // Отступ слева
@@ -19,7 +19,7 @@ const TOP_MARGIN = 60; // Отступ сверху
  */
 export function calculateAutoPosition(
   existingPanels: Panel[],
-  view: 'frontend' | 'backend'
+  _view: 'frontend' | 'backend'
 ): { x: number; y: number } {
   // Если панелей нет - первая панель в начальной позиции
   if (existingPanels.length === 0) {

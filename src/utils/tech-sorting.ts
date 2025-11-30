@@ -9,6 +9,24 @@ import { Technology, AppSchema } from '../types';
  * 3. Два и более → по рекомендованности для всей связки
  */
 
+/**
+ * Сортирует список технологий в зависимости от текущей схемы приложения
+ * 
+ * Алгоритм сортировки:
+ * - Если схема пуста: сортировка по сложности (от простого к сложному)
+ * - Если выбран 1 элемент: сортировка по рекомендованности для него
+ * - Если выбрано 2+ элемента: сортировка по рекомендованности для всей связки
+ * 
+ * @param technologies - Список всех доступных технологий
+ * @param appSchema - Текущая схема приложения с выбранными технологиями
+ * @returns Отсортированный список технологий
+ * 
+ * @example
+ * ```typescript
+ * const sorted = sortTechnologies(allTechnologies, { frontend: [], backend: [] });
+ * // Технологии отсортированы по сложности
+ * ```
+ */
 export function sortTechnologies(
   technologies: Technology[],
   appSchema: AppSchema
@@ -163,7 +181,26 @@ function calculateRecommendationScore(
   return score;
 }
 
-// Вспомогательная функция - получить label рекомендованности
+/**
+ * Получает текстовый label рекомендованности технологии
+ * 
+ * Для пустой схемы возвращает label сложности (⭐ Просто, ⭐⭐ Средне, и т.д.)
+ * Для выбранных технологий возвращает:
+ * - "✅ Рекомендуется" для высокого score (>150)
+ * - "○ Совместимо" для среднего score (50-150)
+ * - "❌ Несовместимо" для низкого score (<-500)
+ * - null для нейтральных технологий
+ * 
+ * @param tech - Технология для которой нужно получить label
+ * @param selected - Массив уже выбранных технологий
+ * @returns Текстовый label или null
+ * 
+ * @example
+ * ```typescript
+ * const label = getRecommendationLabel(reactTech, [typescriptTech]);
+ * // "✅ Рекомендуется"
+ * ```
+ */
 export function getRecommendationLabel(
   tech: Technology,
   selected: Technology[]

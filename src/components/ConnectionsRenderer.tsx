@@ -1,16 +1,18 @@
+import { memo, useMemo } from 'react';
 import { Panel } from '../types';
 
 interface ConnectionsRendererProps {
   panels: Panel[];
 }
 
-export default function ConnectionsRenderer({ panels }: ConnectionsRendererProps) {
-  if (panels.length < 2) return null;
+function ConnectionsRenderer({ panels }: ConnectionsRendererProps) {
+  const connections = useMemo(() => {
+    if (panels.length < 2) return [];
 
-  // Рисуем линии между последовательно связанными панелями
-  const connections: JSX.Element[] = [];
+    // Рисуем линии между последовательно связанными панелями
+    const conns: JSX.Element[] = [];
 
-  panels.forEach((panel, index) => {
+    panels.forEach((panel, index) => {
     // Связываем с предыдущей панелью (последовательная цепочка)
     if (index > 0) {
       const prevPanel = panels[index - 1];
@@ -105,21 +107,37 @@ export default function ConnectionsRenderer({ panels }: ConnectionsRendererProps
         const controlX2 = actualToX - normalizedX * controlOffset;
         const controlY2 = actualToY - normalizedY * controlOffset;
         
-        connections.push(
-          <path
-            key={`connection-${prevPanel.id}-${panel.id}`}
-            d={`M ${actualFromX} ${actualFromY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${actualToX} ${actualToY}`}
-            stroke="#667eea"
-            strokeWidth="2"
-            fill="none"
-            strokeDasharray="6,6"
-            opacity="0.6"
-            className="connection-line"
-          />
+        conns.push(
+          <g key={`connection-${prevPanel.id}-${panel.id}`}>
+            {/* Glow effect */}
+            <path
+              d={`M ${actualFromX} ${actualFromY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${actualToX} ${actualToY}`}
+              stroke="#667eea"
+              strokeWidth="6"
+              fill="none"
+              opacity="0.2"
+              className="connection-glow"
+            />
+            {/* Main line */}
+            <path
+              d={`M ${actualFromX} ${actualFromY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${actualToX} ${actualToY}`}
+              stroke="#667eea"
+              strokeWidth="2"
+              fill="none"
+              strokeDasharray="6,6"
+              opacity="0.6"
+              className="connection-line"
+            />
+          </g>
         );
       }
     }
-  });
+    });
+
+    return conns;
+  }, [panels]);
+
+  if (connections.length === 0) return null;
 
   return (
     <svg
@@ -139,4 +157,6 @@ export default function ConnectionsRenderer({ panels }: ConnectionsRendererProps
     </svg>
   );
 }
+
+export default memo(ConnectionsRenderer);
 

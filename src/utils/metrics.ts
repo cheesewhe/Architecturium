@@ -5,18 +5,28 @@ export function calculateMetrics(schema: AppSchema): AppMetrics {
   
   if (allPanels.length === 0) {
     return {
-      performance: 0,
-      stability: 0,
-      usability: 0,
-      cost: 0,
+      ux: {
+        performance: 0,
+        stability: 0,
+        userFriendliness: 0,
+      },
+      dev: {
+        developmentSpeed: 0,
+        maintainability: 0,
+        complexity: 0,
+        cost: 0,
+      },
     };
   }
 
   // Средние значения всех технологий
   const avgPerformance = allPanels.reduce((sum, p) => sum + p.technology.performance, 0) / allPanels.length;
   const avgStability = allPanels.reduce((sum, p) => sum + p.technology.stability, 0) / allPanels.length;
-  const avgUsability = allPanels.reduce((sum, p) => sum + p.technology.usability, 0) / allPanels.length;
-  const avgCost = allPanels.reduce((sum, p) => sum + p.technology.price, 0) / allPanels.length;
+  const avgUserFriendliness = allPanels.reduce((sum, p) => sum + p.technology.userFriendliness, 0) / allPanels.length;
+  const avgDevelopmentSpeed = allPanels.reduce((sum, p) => sum + p.technology.developmentSpeed, 0) / allPanels.length;
+  const avgMaintainability = allPanels.reduce((sum, p) => sum + p.technology.maintainability, 0) / allPanels.length;
+  const avgComplexity = allPanels.reduce((sum, p) => sum + p.technology.complexity, 0) / allPanels.length;
+  const avgCost = allPanels.reduce((sum, p) => sum + p.technology.cost, 0) / allPanels.length;
 
   // Проверка на совместимость технологий
   const compatibilityBonus = checkCompatibility(schema);
@@ -27,10 +37,17 @@ export function calculateMetrics(schema: AppSchema): AppMetrics {
   const completenessBonus = (hasFrontend && hasBackend) ? 10 : 0;
 
   return {
-    performance: Math.min(100, avgPerformance + compatibilityBonus.perf),
-    stability: Math.min(100, avgStability + compatibilityBonus.stab),
-    usability: Math.min(100, avgUsability + completenessBonus),
-    cost: Math.min(100, avgCost),
+    ux: {
+      performance: Math.min(100, avgPerformance + compatibilityBonus.perf),
+      stability: Math.min(100, avgStability + compatibilityBonus.stab),
+      userFriendliness: Math.min(100, avgUserFriendliness + completenessBonus),
+    },
+    dev: {
+      developmentSpeed: Math.min(100, avgDevelopmentSpeed),
+      maintainability: Math.min(100, avgMaintainability),
+      complexity: Math.min(100, avgComplexity),
+      cost: Math.min(100, avgCost),
+    },
   };
 }
 

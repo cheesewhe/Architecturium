@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { memo, useCallback } from 'react';
 import { Panel, Technology } from '../types';
 import TechnologyPanel from './TechnologyPanel';
 import ConnectionsRenderer from './ConnectionsRenderer';
@@ -11,14 +12,14 @@ interface BackendViewProps {
   onUpdatePosition: (panelId: string, x: number, y: number) => void;
 }
 
-export default function BackendView({ panels, onAddClick, onRemovePanel, onUpdatePosition }: BackendViewProps) {
-  const handleClick = (e: React.MouseEvent) => {
+function BackendView({ panels, onAddClick, onRemovePanel, onUpdatePosition }: BackendViewProps) {
+  const handleClick = useCallback((e: React.MouseEvent) => {
     // Проверяем, что клик не был на панели технологии
     if ((e.target as HTMLElement).closest('.tech-panel')) {
       return;
     }
     onAddClick(e);
-  };
+  }, [onAddClick]);
 
   return (
     <div className="view-wrapper" onClick={handleClick}>
@@ -60,4 +61,6 @@ export default function BackendView({ panels, onAddClick, onRemovePanel, onUpdat
     </div>
   );
 }
+
+export default memo(BackendView);
 

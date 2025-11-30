@@ -1,6 +1,7 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { AppMetrics } from '../types';
 import { useEffect, useRef, useState, useMemo, memo } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface MetricsPanelProps {
   metrics: AppMetrics;
@@ -9,6 +10,7 @@ interface MetricsPanelProps {
 function MetricsPanel({ metrics }: MetricsPanelProps) {
   const prevMetrics = useRef<AppMetrics | null>(null);
   const [metricDeltas, setMetricDeltas] = useState<Record<string, number>>({});
+  const [metricsHistory, setMetricsHistory] = useState<Array<{ time: number; performance: number; stability: number }>>([]);
 
   useEffect(() => {
     if (prevMetrics.current) {
@@ -39,6 +41,18 @@ function MetricsPanel({ metrics }: MetricsPanelProps) {
       setTimeout(() => setMetricDeltas({}), 2000);
     }
     prevMetrics.current = metrics;
+
+    // Add to history for chart
+    setMetricsHistory(prev => {
+      const newEntry = {
+        time: Date.now(),
+        performance: metrics.ux.performance,
+        stability: metrics.ux.stability,
+      };
+      const updated = [...prev, newEntry];
+      // Keep only last 20 entries
+      return updated.slice(-20);
+    });
   }, [metrics]);
 
   const uxScore = useMemo(() => 
@@ -245,6 +259,45 @@ function MetricsPanel({ metrics }: MetricsPanelProps) {
           {totalScore.toFixed(1)}
         </div>
       </div>
+
+      {metricsHistory.length > 1 && (
+        <div className="metrics-chart">
+          <h4>Тренд метрик</h4>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={metricsHistory}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+              <XAxis 
+                dataKey="time" 
+                tickFormatter={(value) => new Date(value).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                stroke="#666"
+                fontSize={12}
+              />
+              <YAxis stroke="#666" fontSize={12} domain={[0, 100]} />
+              <Tooltip 
+                labelFormatter={(value) => new Date(value).toLocaleTimeString('ru-RU')}
+                formatter={(value: unknown) => `${(value as number).toFixed(1)}%`}
+              />
+              <Legend />
+              <Line 
+                type="monotone" 
+                dataKey="performance" 
+                stroke="#4a9eff" 
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                name="Производительность"
+              />
+              <Line 
+                type="monotone" 
+                dataKey="stability" 
+                stroke="#10b981" 
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                name="Стабильность"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }

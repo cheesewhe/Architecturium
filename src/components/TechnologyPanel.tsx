@@ -10,7 +10,7 @@ interface TechnologyPanelProps {
 }
 
 function TechnologyPanel({ panel, position, onRemove, onUpdatePosition }: TechnologyPanelProps) {
-  const [isHovered, setIsHovered] = useState(false);
+  const [, setIsHovered] = useState(false);
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
@@ -41,12 +41,8 @@ function TechnologyPanel({ panel, position, onRemove, onUpdatePosition }: Techno
   const snapToGrid = (value: number) => {
     return Math.round(value / GRID_SIZE) * GRID_SIZE;
   };
-  
-  // Получаем реальные размеры панели (должно совпадать с CSS)
-  const PANEL_WIDTH = 300; // Исправлено: было 200, должно быть 300 согласно CSS
-  const PANEL_HEIGHT = 120;
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: any) => {
+  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: { offset: { x: number; y: number } }) => {
     // ИСПРАВЛЕНО: рассчитываем позицию на основе реального положения элемента
     const element = event.target as HTMLElement;
     const viewWrapper = element.closest('.view-wrapper');
